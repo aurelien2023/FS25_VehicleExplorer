@@ -36,52 +36,56 @@ VehicleSort.loadTrainStatus = {};
 VehicleSort.loadTrainStatus.entries = 0;
 VehicleSort.loadItemsEnterable = {};
 
-VehicleSort.config = {                                         --Id    -Order in configMenu
-  {'showTrain', true, 1},                                      -- 1    1
-  {'showCrane', false, 2},                                     -- 2    2
-  {'showBrand', false, 3},                                     -- 3    3
-  {'showHorsepower', true, 4},                                 -- 4    4
-  {'showFillLevels', true, 5},                                 -- 5    5  [NOUVEAU]
-  {'showPercentages', true, 6},                                -- 6    6  [NOUVEAU]
-  {'showEmpty', false, 7},                                     -- 7    7  [NOUVEAU]
-  {'showNames', true, 8},                                      -- 8    8
-  {'showImplements', true, 9},                                 -- 9    9  [NOUVEAU]
-  {'showImplementsMax', VehicleSort.showImplementsMax, 10},    -- 10   10 [NOUVEAU]
-  {'showSteerableImplements', true, 11},                       -- 11   11 [NOUVEAU]
-  {'showImg', true, 12},                                       -- 12   12 [NOUVEAU]
-  {'showImgMaxImp', VehicleSort.showImgMaxImp, 13},           -- 13   13 [NOUVEAU]
-  {'showInfo', true, 14},                                      -- 14   14 [NOUVEAU]
-  {'showInfoMaxImpl', VehicleSort.showInfoMaxImpl, 15},        -- 15   15 [NOUVEAU]
-  {'txtSize', VehicleSort.txtSizeDef, 16},                     -- 16   16 [NOUVEAU]
-  {'bgTrans', VehicleSort.bgTransDef, 17},                     -- 17   17 [NOUVEAU]
-  {'infoBg', true, 18},                                        -- 18   18 [NOUVEAU]
-  {'useTwoColoredList', true, 19},                             -- 19   19 [NOUVEAU]
-  {'imageBg', true, 20},                                       -- 20   20 [NOUVEAU]
-  {'infoStart', VehicleSort.infoYStart, 21},                   -- 21   21 [NOUVEAU]
-  {'listAlignment', VehicleSort.listAlignment, 22},            -- 22   22 [NOUVEAU]
-  {'cleanOnRepair', true, 23},                                 -- 23   23 [NOUVEAU]
-  {'paintonRepair', true, 24},                                 -- 24   24 [NOUVEAU]
-  {'saveStatus', true, 25},                                    -- 25   25 [NOUVEAU]
-  {'integrateTardis', true, 26},                               -- 26   26 [NOUVEAU]
-  {'enterVehonTeleport', true, 27},                            -- 27   27 [NOUVEAU]
-  {'showHelp', true, 28},                                      -- 28   28 [NOUVEAU]
-  {'useVeExTabOrder', true, 29},                               -- 29   29 [NOUVEAU]
+VehicleSort.config = {											--Id		-Order in configMenu
+  {'showTrain', true, 1},										-- 1		1
+  {'showCrane', false, 2},                             			-- 2		2
+  {'showBrand', false, 3},                             			-- 3		3
+  {'showHorsepower', true, 4},                         			-- 4		4
+  {'showNames', true, 8},                              			-- 5		8
+  {'showFillLevels', true, 5},                         			-- 6		5
+  {'showPercentages', true, 6},                        			-- 7		6
+  {'showEmpty', false, 7},                             			-- 8		7
+  {'txtSize', VehicleSort.txtSizeDef, 16},             			-- 9		16
+  {'bgTrans', VehicleSort.bgTransDef, 17},              		-- 10		17
+  {'showSteerableImplements', true, 11},                		-- 11		11
+  {'showImplements', true, 9},	                         		-- 12		9
+  {'showHelp', true, 28},                               		-- 13		28
+  {'saveStatus', true, 25},                             		-- 14		25
+  {'showImg', true, 12},                                		-- 15		12
+  {'showInfo', true, 14},                               		-- 16		14
+  {'infoStart', VehicleSort.infoYStart, 21},            		-- 17		21
+  {'infoBg', true, 18},                                 		-- 18		18
+  {'imageBg', true, 20},                                		-- 19		20
+  {'listAlignment', VehicleSort.listAlignment, 22},     		-- 20		22
+  {'cleanOnRepair', true, 23},                          		-- 21		23
+  {'integrateTardis', true, 26},                        		-- 22		26
+  {'enterVehonTeleport', true, 27},                     		-- 23		27
+  {'showImgMaxImp', VehicleSort.showImgMaxImp, 13},     		-- 24		13
+  {'showInfoMaxImpl', VehicleSort.showInfoMaxImpl, 15},			-- 25		15
+  {'showImplementsMax', VehicleSort.showImplementsMax, 10},		-- 26		10
+  {'useTwoColoredList', true, 19},								-- 27		19
+  {'useVeExTabOrder', true, 29},								-- 28		29
+  {'paintonRepair', true, 24},									-- 29		24
 };
 
--- Conserver le système de couleurs amélioré de la version 1
 VehicleSort.tColor = {}; -- text colours
-VehicleSort.tColor.isParked   = Color.PRESETS.GRAY;
-VehicleSort.tColor.locked     = Color.PRESETS.RED;
-VehicleSort.tColor.selected   = Color.PRESETS.ORANGE;
-VehicleSort.tColor.standard   = Color.PRESETS.WHITE;
-VehicleSort.tColor.standard2  = Color.fromRGBA(210, 214, 186, 255);
-VehicleSort.tColor.hired      = Color.fromRGBA(0, 127, 255, 255);
-VehicleSort.tColor.courseplay = Color.fromRGBA(69, 140, 224, 255);
-VehicleSort.tColor.followme   = Color.fromRGBA(235, 79, 176, 255);
-VehicleSort.tColor.autodrive  = Color.fromRGBA(8, 199, 217, 255);
-VehicleSort.tColor.aive       = Color.PRESETS.ORANGE;
-VehicleSort.tColor.self       = Color.PRESETS.GREEN;
-VehicleSort.tColor.motorOn    = Color.fromRGBA(237, 194, 6, 255);
+VehicleSort.tColor.isParked 	= Color.PRESETS.GRAY;   -- grey
+VehicleSort.tColor.locked 		= Color.PRESETS.RED;   -- red
+VehicleSort.tColor.selected 	= Color.PRESETS.ORANGE; -- orange
+VehicleSort.tColor.standard 	= Color.PRESETS.WHITE; -- white
+VehicleSort.tColor.standard2 	= Color.fromRGBA(210, 214, 186, 255); -- eggcolor
+VehicleSort.tColor.hired 			= Color.fromRGBA(0, 127, 255, 255); 	-- blue
+-- VehicleSort.tColor.hired 			= Color.PRESETS.BLUE; 	-- blue
+VehicleSort.tColor.courseplay = Color.fromRGBA(69, 140, 224, 255); 	-- baby blue
+-- VehicleSort.tColor.courseplay = Color.PRESETS.SKYBLUE; 	-- baby blue
+VehicleSort.tColor.followme 	= Color.fromRGBA(235, 79, 176, 255); 	-- light pink
+-- VehicleSort.tColor.followme 	= Color.PRESETS.LIGHTPINK; 	-- light pink
+VehicleSort.tColor.autodrive 	= Color.fromRGBA(8, 199, 217, 255); 	-- aqua/turquoise
+-- VehicleSort.tColor.autodrive 	= Color.PRESETS.TURQOUISE; 	-- aqua/turquoise
+VehicleSort.tColor.aive 			= Color.PRESETS.ORANGE; 	-- orange
+VehicleSort.tColor.self 			= Color.PRESETS.GREEN; -- green
+
+VehicleSort.tColor.motorOn 		= Color.fromRGBA(237, 194, 6, 255); -- yellow
 
 VehicleSort.keyCon = 'VeExConfig';
 VehicleSort.selectedConfigIndex = 1;
