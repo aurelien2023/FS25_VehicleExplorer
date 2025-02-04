@@ -27,7 +27,7 @@
 		<text name="showFillLevels"							text="Afficher le niveau de remplissage dans la liste des véhicules" />
 		<text name="showPercentages"						text="Afficher le niveau de remplissage en pourcentage" />
 		<text name="showEmpty"								text="Afficher le niveau de remplissage des véhicules vides" />
-		<text name="showHelp"								text="fficher les raccourcis clavier (y compris Tardis si disponible)" />
+		<text name="showHelp"								text="Afficher les raccourcis clavier (y compris Tardis si disponible)" />
 		<text name="bgTrans"								text="Transparence de l'arrière-plan" />
 		<text name="txtSize"								text="Taille du texte" />
 		<text name="showSteerableImplements"				text="Afficher les équipements orientables" />
