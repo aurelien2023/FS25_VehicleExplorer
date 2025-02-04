@@ -222,36 +222,35 @@ function VehicleSort:onDelete()
 end
 
 function VehicleSort:RegisterActionEvents(isSelected, isOnActiveVehicle)
-	VehicleSort:dp("Registering action events...", 'RegisterActionEvents')
-
-	local actions = {
-					"vsToggleList",
-					"vsLockListItem",
-					"vsMoveCursorUp",
-					"vsMoveCursorDown",
-					"vsMoveCursorUpFast",
-					"vsMoveCursorDownFast",
-					"vsChangeVehicle",
-					"vsShowConfig",
-					"vsTogglePark",
-					"vsRepair",
-					"vsTab",
-					"vsTabBack",
-					"vsEasyTab"
-				};
-
-	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
-	for _, action in pairs(actions) do
-		local actionMethod = string.format("action_%s", action);
-		local result, eventName = g_inputBinding.registerActionEvent(g_inputBinding, action, self, VehicleSort[actionMethod], false, true, false, true)
-		VehicleSort:dp("Register action event result", 'RegisterActionEvents', string.format("actionMethod: {%s} | event name: {%s}", actionMethod, eventName))
-		if result then
-			table.insert(VehicleSort.eventName, eventName);
-			g_inputBinding:setActionEventTextVisibility(eventId, VehicleSort.config[13][2]);
-		end
-	end
-	g_inputBinding:endActionEventsModification()
-	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
+    VehicleSort:dp("Registering action events...", 'RegisterActionEvents')
+    local actions = {
+        "vsToggleList",
+        "vsLockListItem",
+        "vsMoveCursorUp",
+        "vsMoveCursorDown",
+        "vsMoveCursorUpFast",
+        "vsMoveCursorDownFast",
+        "vsChangeVehicle",
+        "vsShowConfig",
+        "vsTogglePark",
+        "vsRepair",
+        "vsTab",
+        "vsTabBack",
+        "vsEasyTab"
+    }
+    g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
+    for _, action in pairs(actions) do
+        local actionMethod = string.format("action_%s", action)
+        local result, eventName = g_inputBinding.registerActionEvent(g_inputBinding, action, self, VehicleSort[actionMethod], false, true, false, true)
+        VehicleSort:dp("Register action event result", 'RegisterActionEvents', string.format("actionMethod: {%s} | event name: {%s}", actionMethod, eventName))
+        if result then
+            table.insert(VehicleSort.eventName, eventName)
+            -- Modification : Par défaut, masquer les événements dans le menu d'aide
+            g_inputBinding:setActionEventTextVisibility(eventId, false)
+        end
+    end
+    g_inputBinding:endActionEventsModification()
+    g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
 end
 
 function VehicleSort.registerEventListeners(vehicleType)
@@ -2134,31 +2133,59 @@ function VehicleSort:overwriteDefaultTabBinding()
 end
 
 function VehicleSort:setHelpVisibility(eventTable, state)
+
     -- Input validation 
+
     if eventTable == nil or type(eventTable) ~= "table" then
+
         print("Warning: Invalid event table passed to setHelpVisibility") 
+
         return false
+
     end
+
     
+
     -- Default state to false if not provided
+
     state = state or false
+
     
+
     -- Track if any events were updated
+
     local updatedAny = false
+
     
+
     -- Update visibility for each event
+
     for _, eventName in pairs(eventTable) do
+
         if eventName and g_inputBinding.events[eventName] then
+
             local event = g_inputBinding.events[eventName]
+
             if event and event.id then
-                g_inputBinding:setActionEventTextVisibility(event.id, state)
+
+                -- Modification : Toujours masquer les événements liés à VehicleSort
+
+                g_inputBinding:setActionEventTextVisibility(event.id, false)
+
                 updatedAny = true
+
             end
+
         end
+
     end
+
     
+
     -- Return success status
+
     return updatedAny
+
 end
 
 function VehicleSort:showCenteredBlinkingWarning(text, blinkDuration)
