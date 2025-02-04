@@ -2129,13 +2129,31 @@ function VehicleSort:overwriteDefaultTabBinding()
 end
 
 function VehicleSort:setHelpVisibility(eventTable, state)
-	if #eventTable > 0 then
-		for _, eventName in pairs(eventTable) do
-			if g_inputBinding.events[eventName] ~= nil and g_inputBinding.events[eventName].id ~= nil then
-				g_inputBinding:setActionEventTextVisibility(g_inputBinding.events[eventName].id, state)
-			end
-		end
-	end
+    -- Input validation 
+    if eventTable == nil or type(eventTable) ~= "table" then
+        print("Warning: Invalid event table passed to setHelpVisibility") 
+        return false
+    end
+    
+    -- Default state to false if not provided
+    state = state or false
+    
+    -- Track if any events were updated
+    local updatedAny = false
+    
+    -- Update visibility for each event
+    for _, eventName in pairs(eventTable) do
+        if eventName and g_inputBinding.events[eventName] then
+            local event = g_inputBinding.events[eventName]
+            if event and event.id then
+                g_inputBinding:setActionEventTextVisibility(event.id, state)
+                updatedAny = true
+            end
+        end
+    end
+    
+    -- Return success status
+    return updatedAny
 end
 
 function VehicleSort:showCenteredBlinkingWarning(text, blinkDuration)
