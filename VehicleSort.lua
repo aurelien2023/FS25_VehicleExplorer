@@ -102,6 +102,8 @@ VehicleSort.HiddenCount = 0;
 --VehicleSort.dirtyState = false;						-- Used to check if we have to sync the order with g_currentMission.vehicles
 VehicleSort.orderedConfig = {};							-- It's just nicer to have the config list ordered
 
+VehicleSort.enableDebugMessages = false; -- Set to true to see specialization debug messages
+
 addModEventListener(VehicleSort);
 
 function VehicleSort:dp(val, fun, msg) -- debug mode, write to log
@@ -1210,6 +1212,9 @@ function VehicleSort:getControllerName(realId)
 end
 
 function VehicleSort.initSpecialization()
+    if VehicleSort.enableDebugMessages then
+        print("::DEBUG:: from the RegisterSpecialization.lua: " .. message)
+    end
     local schema = Vehicle.xmlSchemaSavegame
     schema:setXMLSpecializationType("vehicleSort")
 
