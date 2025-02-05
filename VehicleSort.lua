@@ -174,6 +174,24 @@ end
 ---Called on loading
 -- @param table savegame savegame
 function VehicleSort:onLoad(savegame)
+    if not self.spec_vehicleSort then
+        return
+    end
+    
+    local spec = self.spec_vehicleSort
+    
+    -- Initialiser les tables
+    spec.texts = spec.texts or {}
+    spec.actionEvents = spec.actionEvents or {}
+    
+    -- Initialiser les textes nécessaires
+    if g_i18n then
+        for _, config in pairs(VehicleSort.config) do
+            if config[1] then
+                spec.texts[config[1]] = g_i18n:getText(config[1])
+            end
+        end
+    end
 end
 
 function VehicleSort:onPostLoad(savegame)
@@ -222,37 +240,104 @@ function VehicleSort:onDelete()
 end
 
 function VehicleSort:RegisterActionEvents(isSelected, isOnActiveVehicle)
-	VehicleSort:dp("Registering action events...", 'RegisterActionEvents')
+    if not self.isClient then
+        return
+    end
+    
+    -- S'assurer que la table d'événements existe
+    self.actionEvents = self.actionEvents or {}
+    
+    -- Nettoyer les événements existants
+    self:clearActionEventsTable(self.actionEvents)
 
-	local actions = {
-					"vsToggleList",
-					"vsLockListItem",
-					"vsMoveCursorUp",
-					"vsMoveCursorDown",
-					"vsMoveCursorUpFast",
-					"vsMoveCursorDownFast",
-					"vsChangeVehicle",
-					"vsShowConfig",
-					"vsTogglePark",
-					"vsRepair",
-					"vsTab",
-					"vsTabBack",
-					"vsEasyTab"
-				};
+    -- Ne pas continuer si nous ne sommes pas dans le bon contexte
+    if not self.isActiveForInputIgnoreSelectionIgnoreAI then
+        return
+    end
 
-	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
-	for _, action in pairs(actions) do
-		local actionMethod = string.format("action_%s", action);
-		local result, eventName = g_inputBinding.registerActionEvent(g_inputBinding, action, self, VehicleSort[actionMethod], false, true, false, true)
-		VehicleSort:dp("Register action event result", 'RegisterActionEvents', string.format("actionMethod: {%s} | event name: {%s}", actionMethod, eventName))
-		if result then
-			table.insert(VehicleSort.eventName, eventName);
-			
-            -- Forcer le masquage des événements si la configuration le permet
-    g_inputBinding:setActionEventTextVisibility(eventName, not VehicleSort.config[13][2])  -- Utiliser eventName au lieu de eventId
-	end
-	g_inputBinding:endActionEventsModification()
-	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
+    local actions = {
+        "vsToggleList",
+        "vsLockListItem",
+        "vsMoveCursorUp",
+        "vsMoveCursorDown",
+        "vsMoveCursorUpFast",
+        "vsMoveCursorDownFast",
+        "vsChangeVehicle",
+        "vsShowConfig",
+        "vsTogglePark",
+        "vsRepair",
+        "vsTab",
+        "vsTabBack",
+        "vsEasyTab"
+    }
+
+    -- Sauvegarder le contexte actuel
+    local oldContext = g_inputBinding.currentContextName
+    
+    -- Commencer la modification des événements
+    g_inputBinding:beginActionEventsModification(oldContext)
+    
+    for _, actionName in pairs(actions) do
+        local actionMethod = string.format("action_%s", actionName)
+        
+        -- Vérifier que la méthode existe
+        if VehicleSort[actionMethod] then
+            -- Enregistrer l'événement d'action
+            local _, eventName = InputBinding.registerActionEvent(g_inputBinding, actionName, self, 
+                VehicleSort[actionMethod], false, true, false, true)
+            
+            if eventName then
+                -- Stocker l'événement
+                table.insert(VehicleSort.eventName, eventName)
+                
+                -- Définir la visibilité en fonction de la configuration
+                local isVisible = not VehicleSort.config[13][2]
+                g_inputBinding:setActionEventTextVisibility(eventName, isVisible)
+                g_inputBinding:setActionEventTextPriority(eventName, GS_PRIO_NORMAL)
+            end
+        end
+    end
+    
+    -- Terminer la modification des événements
+    g_inputBinding:endActionEventsModification()
+    
+    -- Restaurer le contexte précédent si nécessaire
+    if oldContext ~= g_inputBinding.currentContextName then
+        g_inputBinding:beginActionEventsModification(oldContext)
+    end
+end
+
+function VehicleSort:clearActionEventsTable(actionEvents)
+    if actionEvents == nil then
+        return
+    end
+    
+    local i = 0
+    while actionEvents[i] ~= nil do
+        g_inputBinding:removeActionEvent(actionEvents, actionEvents[i].actionEventId)
+        i = i + 1
+    end
+end
+
+function VehicleSort:isActiveForInputIgnoreSelectionIgnoreAI()
+    return true
+end
+
+function VehicleSort:updateActionEvents()
+    local spec = self.spec_vehicleSort
+    if not spec or not spec.actionEvents then
+        return
+    end
+    
+    for _, event in pairs(spec.actionEvents) do
+        if event.eventId then
+            local shouldBeVisible = not VehicleSort.config[13][2]
+            if event.isVisible ~= shouldBeVisible then
+                event.isVisible = shouldBeVisible
+                g_inputBinding:setActionEventTextVisibility(event.eventId, shouldBeVisible)
+            end
+        end
+    end
 end
 
 function VehicleSort.registerEventListeners(vehicleType)
@@ -298,6 +383,8 @@ function VehicleSort:saveToXMLFile(xmlFile, key)
 end
 
 function VehicleSort:update()
+    -- Mise à jour des événements d'action
+    self:updateActionEvents()
 	-- Don't really like to add VeEx to update as it's not really necessary, but haven't found another solution to set the train motor&parked stated after load
 	if VehicleSort.firstRun then
 		VehicleSort:prepareVeEx();
@@ -1273,7 +1360,7 @@ function VehicleSort:initVS()
 	VehicleSort.xmlFilename = VehicleSort.savePath .. 'VeExConfig.xml';
 	VehicleSort.bg = createImageOverlay('dataS/menu/black.png'); --credit: Decker_MMIV, VehicleGroupsSwitcher mod
 	VehicleSort.bgX = 0.5;
-
+    VehicleSort.eventName = VehicleSort.eventName or {}
 	VehicleSort:dp(string.format('Initialized userPath [%s] saveBasePath [%s] savePath [%s]',
 	tostring(VehicleSort.userPath),
 	tostring(VehicleSort.saveBasePath),
@@ -2157,28 +2244,20 @@ function VehicleSort:overwriteDefaultTabBinding()
 	end
 end
 
-function VehicleSort:setHelpVisibility(eventTable, state)
-    -- Input validation 
-    if eventTable == nil or type(eventTable) ~= "table" then
-        print("Warning: Invalid event table passed to setHelpVisibility") 
-        return false
+function VehicleSort:setHelpVisibility(state)
+    local spec = self.spec_vehicleSort
+    if not spec or not spec.actionEvents then
+        return
     end
     
-    -- Default state to false if not provided
-    state = state or false
-    
-    -- Update visibility for each event
-    for _, eventName in pairs(eventTable) do
-        if eventName and g_inputBinding.events[eventName] then
-            local event = g_inputBinding.events[eventName]
-            if event and event.id then
-                -- Toujours masquer les événements liés à VehicleSort
-                g_inputBinding:setActionEventTextVisibility(event.id, false)
-            end
+    for _, event in pairs(spec.actionEvents) do
+        if event.eventId then
+            event.isVisible = state
+            g_inputBinding:setActionEventTextVisibility(event.eventId, state)
         end
     end
     
-    -- Force refresh of input bindings
+    -- Forcer le rafraîchissement des entrées
     InputBinding:notifyEventChanges()
 end
 
