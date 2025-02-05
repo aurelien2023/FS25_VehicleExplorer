@@ -452,33 +452,35 @@ function VehicleSort:action_vsChangeVehicle(actionName, keyStatus, arg3, arg4, a
 				VehicleSort.wasTeleportAction = false;
 			end
 		end
+		-- Ajoutez cet appel pour masquer les événements du menu F1
+        VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
 	end
 end
 
 function VehicleSort:action_vsShowConfig(actionName, keyStatus, arg3, arg4, arg5)
-	VehicleSort:dp("action_vsShowConfig fires", "action_vsShowConfig");
-	if VehicleSort.showVehicles and not VehicleSort.showConfig then
-      VehicleSort.showVehicles = false;
-	end
+    VehicleSort:dp("action_vsShowConfig fires", "action_vsShowConfig");
+    if VehicleSort.showVehicles and not VehicleSort.showConfig then
+        VehicleSort.showVehicles = false;
+    end
 
-	VehicleSort.showConfig = not VehicleSort.showConfig;
-	VehicleSort:saveConfig();
+    VehicleSort.showConfig = not VehicleSort.showConfig;
+    VehicleSort:saveConfig();
 
-	--Directly set the displayIsVisible for the F1 help menu
-	if VehicleSort.config[13][2] then
-		VehicleSort:setHelpVisibility(VehicleSort.eventName, true)
-		--If Tardis integration is available we'll also do the same for it
-		if envTardis ~= nil and #Tardis.eventName > 0 then
-			VehicleSort:setHelpVisibility(Tardis.eventName, true)
-		end
-	else
-		VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-		if envTardis ~= nil and #Tardis.eventName > 0 then
-			VehicleSort:setHelpVisibility(Tardis.eventName, false)
-		end
-	end
+    -- Directly set the displayIsVisible for the F1 help menu
+    if VehicleSort.config[13][2] then
+        VehicleSort:setHelpVisibility(VehicleSort.eventName, true)
+        -- If Tardis integration is available we'll also do the same for it
+        if envTardis ~= nil and #Tardis.eventName > 0 then
+            VehicleSort:setHelpVisibility(Tardis.eventName, true)
+        end
+    else
+        VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
+        if envTardis ~= nil and #Tardis.eventName > 0 then
+            VehicleSort:setHelpVisibility(Tardis.eventName, false)
+        end
+    end
 
-	InputBinding:notifyEventChanges();
+    InputBinding:notifyEventChanges();
 end
 
 function VehicleSort:action_vsTogglePark(actionName, keyStatus, arg3, arg4, arg5)
@@ -2012,7 +2014,8 @@ function VehicleSort:tabVehicle(backwards)
 	end
 	realVeh = g_currentMission.vehicleSystem.vehicles[VehicleSort.Sorted[nextId]];
 	g_localPlayer:requestToEnterVehicle(realVeh);
-
+    -- Ajoutez cet appel pour masquer les événements du menu F1
+    VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
 end
 
 function VehicleSort:getNextInTabList(orderId, backwards)
