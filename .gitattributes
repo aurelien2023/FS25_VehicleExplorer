@@ -1,0 +1,7 @@
+*.log export-ignore
+*.tmp export-ignore
+debug/ export-ignore
+.gitignore export-ignore
+screenshots/ export-ignore
+*.ps1 export-ignore
+*.md export-ignore
