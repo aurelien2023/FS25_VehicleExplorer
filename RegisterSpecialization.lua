@@ -17,33 +17,39 @@ Changelog: 		v1.0 @02.01.2019 - initial implementation in FS 19
 RegisterSpecialization = {};
 RegisterSpecialization.currentModDirectory = g_currentModDirectory;
 
+local enableDebugMessages = false
 local modDesc = loadXMLFile("modDesc", RegisterSpecialization.currentModDirectory .. "modDesc.xml");
 
 RegisterSpecialization.debugPriority = Utils.getNoNil(getXMLInt(modDesc, "modDesc.registerSpecializations#debugPriority"), 0);
 
-local function printError(errorMessage, isWarning, isInfo)
-	local prefix = "::ERROR:: ";
-	
-	if isWarning then
-		prefix = "::WARNING:: ";
-	elseif isInfo then
-		prefix = "::INFO:: ";
-	end;
-	
-	print(prefix .. "from the RegisterSpecialization.lua: " .. tostring(errorMessage));
-end;
+-- Modifiez la fonction pour utiliser la variable locale
+function printError(errorMessage, isWarning, isInfo)
+    local prefix = "::ERROR:: "
 
-local function printDebug(debugMessage, priority, addString)
-	if RegisterSpecialization.debugPriority >= priority then
-		local prefix = "";
-		
-		if addString then
-			prefix = "::DEBUG:: from the RegisterSpecialization.lua: ";
-		end;
-		
-		print(prefix .. tostring(debugMessage));
-	end;
-end;
+    if isWarning then
+        prefix = "::WARNING:: "
+    elseif isInfo then
+        prefix = "::INFO:: "
+    end
+    -- Filtrez les messages de débogage spécifiques
+    if not string.find(tostring(errorMessage), "Added Specialization 'vehicleStatus' succsessfully") then
+        print(prefix .. "from the RegisterSpecialization.lua: " .. tostring(errorMessage))
+    end
+end
+
+function printDebug(debugMessage, priority, addString)
+    -- Utilisez la variable locale au lieu de VehicleSort.enableDebugMessages
+    if not enableDebugMessages then
+        return
+    end
+    if RegisterSpecialization.debugPriority >= priority then
+        local prefix = ""
+        if addString then
+            prefix = "::DEBUG:: from the RegisterSpecialization.lua: "
+        end
+        print(prefix .. tostring(debugMessage))
+    end
+end
 
 function RegisterSpecialization:addSpecializations()
 	local specializationNumber = 0;

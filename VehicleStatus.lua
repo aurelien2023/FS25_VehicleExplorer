@@ -15,6 +15,8 @@ VehicleStatus.Version = "1.0.1.0";
 
 VehicleStatus.debug = fileExists(VehicleStatus.ModDirectory ..'debug');
 
+VehicleSort.enableDebugMessages = false
+
 print(string.format('VehicleStatus v%s - DebugMode %s)', VehicleStatus.Version, tostring(VehicleStatus.debug)));
 
 -- Add debug print function

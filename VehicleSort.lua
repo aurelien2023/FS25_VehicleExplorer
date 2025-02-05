@@ -17,7 +17,9 @@ VehicleSort.debug = fileExists(VehicleSort.ModDirectory ..'debug');
 
 VehicleSort.firstRun = true;
 
-print(string.format('VehicleSort v%s - DebugMode %s)', VehicleSort.Version, tostring(VehicleSort.debug)));
+VehicleSort.enableDebugMessages = false
+
+-- print(string.format('VehicleSort v%s - DebugMode %s)', VehicleSort.Version, tostring(VehicleSort.debug)));
 
 VehicleSort.bgTransDef = 0.8;
 VehicleSort.txtSizeDef = 2;
@@ -222,35 +224,38 @@ function VehicleSort:onDelete()
 end
 
 function VehicleSort:RegisterActionEvents(isSelected, isOnActiveVehicle)
-    VehicleSort:dp("Registering action events...", 'RegisterActionEvents')
-    local actions = {
-        "vsToggleList",
-        "vsLockListItem",
-        "vsMoveCursorUp",
-        "vsMoveCursorDown",
-        "vsMoveCursorUpFast",
-        "vsMoveCursorDownFast",
-        "vsChangeVehicle",
-        "vsShowConfig",
-        "vsTogglePark",
-        "vsRepair",
-        "vsTab",
-        "vsTabBack",
-        "vsEasyTab"
-    }
-    g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
-    for _, action in pairs(actions) do
-        local actionMethod = string.format("action_%s", action)
-        local result, eventName = g_inputBinding.registerActionEvent(g_inputBinding, action, self, VehicleSort[actionMethod], false, true, false, true)
-        VehicleSort:dp("Register action event result", 'RegisterActionEvents', string.format("actionMethod: {%s} | event name: {%s}", actionMethod, eventName))
-        if result then
-            table.insert(VehicleSort.eventName, eventName)
-            -- Modification : Par défaut, masquer les événements dans le menu d'aide
-            g_inputBinding:setActionEventTextVisibility(eventId, false)
-        end
-    end
-    g_inputBinding:endActionEventsModification()
-    g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
+	VehicleSort:dp("Registering action events...", 'RegisterActionEvents')
+
+	local actions = {
+					"vsToggleList",
+					"vsLockListItem",
+					"vsMoveCursorUp",
+					"vsMoveCursorDown",
+					"vsMoveCursorUpFast",
+					"vsMoveCursorDownFast",
+					"vsChangeVehicle",
+					"vsShowConfig",
+					"vsTogglePark",
+					"vsRepair",
+					"vsTab",
+					"vsTabBack",
+					"vsEasyTab"
+				};
+
+	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
+	for _, action in pairs(actions) do
+		local actionMethod = string.format("action_%s", action);
+		local result, eventName = g_inputBinding.registerActionEvent(g_inputBinding, action, self, VehicleSort[actionMethod], false, true, false, true)
+		VehicleSort:dp("Register action event result", 'RegisterActionEvents', string.format("actionMethod: {%s} | event name: {%s}", actionMethod, eventName))
+		if result then
+			table.insert(VehicleSort.eventName, eventName);
+			
+            -- Forcer le masquage des événements si la configuration le permet
+            g_inputBinding:setActionEventTextVisibility(eventId, not VehicleSort.config[13][2])
+		end
+	end
+	g_inputBinding:endActionEventsModification()
+	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
 end
 
 function VehicleSort.registerEventListeners(vehicleType)
@@ -322,6 +327,10 @@ function VehicleSort:draw()
 		else
 		  VehicleSort:drawList();
 		end
+        if VehicleSort.config[13][2] then
+            -- Modification : Masquer l'attribut des touches dans le menu F1
+            VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
+        end
 	end
 
 end
@@ -1366,6 +1375,17 @@ function VehicleSort:loadConfig()
 						VehicleSort.config[i][2] = b;
 					end
 				end
+                if i == 13 then  -- Index correspondant à la configuration d'aide
+
+                    local helpVisibility = getXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.helpVisibility')
+
+                    if helpVisibility ~= nil then
+
+                        VehicleSort.config[i][2] = helpVisibility
+
+                    end
+
+                end
 			end
 			print("VeExConfig loaded");
 		end
@@ -1515,6 +1535,11 @@ function VehicleSort:saveConfig()
 			setXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. tostring(VehicleSort.config[i][1]), VehicleSort.config[i][2]);
 		end
 	end
+    -- Ajouter une sauvegarde explicite de la configuration des touches
+
+    setXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.helpVisibility', VehicleSort.config[13][2])
+
+    
 	saveXMLFile(VehicleSort.saveFile);
 
   print("VehicleSort config saved");
@@ -2133,59 +2158,30 @@ function VehicleSort:overwriteDefaultTabBinding()
 end
 
 function VehicleSort:setHelpVisibility(eventTable, state)
-
     -- Input validation 
-
     if eventTable == nil or type(eventTable) ~= "table" then
-
         print("Warning: Invalid event table passed to setHelpVisibility") 
-
         return false
-
     end
-
     
-
     -- Default state to false if not provided
-
     state = state or false
-
     
-
     -- Track if any events were updated
-
     local updatedAny = false
-
     
-
     -- Update visibility for each event
-
     for _, eventName in pairs(eventTable) do
-
         if eventName and g_inputBinding.events[eventName] then
-
             local event = g_inputBinding.events[eventName]
-
             if event and event.id then
-
                 -- Modification : Toujours masquer les événements liés à VehicleSort
-
                 g_inputBinding:setActionEventTextVisibility(event.id, false)
-
-                updatedAny = true
-
             end
-
         end
-
     end
-
-    
-
     -- Return success status
-
     return updatedAny
-
 end
 
 function VehicleSort:showCenteredBlinkingWarning(text, blinkDuration)
