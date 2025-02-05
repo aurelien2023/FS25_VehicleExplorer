@@ -249,8 +249,7 @@ function VehicleSort:RegisterActionEvents(isSelected, isOnActiveVehicle)
 			table.insert(VehicleSort.eventName, eventName);
 			
             -- Forcer le masquage des événements si la configuration le permet
-            g_inputBinding:setActionEventTextVisibility(eventId, not VehicleSort.config[13][2])
-		end
+    g_inputBinding:setActionEventTextVisibility(eventName, not VehicleSort.config[13][2])  -- Utiliser eventName au lieu de eventId
 	end
 	g_inputBinding:endActionEventsModification()
 	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
@@ -449,9 +448,12 @@ function VehicleSort:action_vsChangeVehicle(actionName, keyStatus, arg3, arg4, a
             elseif envTardis ~= nil then
                 VehicleSort.wasTeleportAction = false;
             end
+			if VehicleSort.config[13][2] == false then
+                VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
+            end
         end
         -- Ajoutez cet appel pour masquer les événements du menu F1
-        VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
+        -- VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
     end
 end
 
@@ -1536,12 +1538,9 @@ function VehicleSort:saveConfig()
 		end
 	end
     -- Ajouter une sauvegarde explicite de la configuration des touches
-
     setXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.helpVisibility', VehicleSort.config[13][2])
-
     
-	saveXMLFile(VehicleSort.saveFile);
-
+    saveXMLFile(VehicleSort.saveFile);
   print("VehicleSort config saved");
 end
 
@@ -2168,21 +2167,19 @@ function VehicleSort:setHelpVisibility(eventTable, state)
     -- Default state to false if not provided
     state = state or false
     
-    -- Track if any events were updated
-    local updatedAny = false
-    
     -- Update visibility for each event
     for _, eventName in pairs(eventTable) do
         if eventName and g_inputBinding.events[eventName] then
             local event = g_inputBinding.events[eventName]
             if event and event.id then
-                -- Modification : Toujours masquer les événements liés à VehicleSort
+                -- Toujours masquer les événements liés à VehicleSort
                 g_inputBinding:setActionEventTextVisibility(event.id, false)
             end
         end
     end
-    -- Return success status
-    return updatedAny
+    
+    -- Force refresh of input bindings
+    InputBinding:notifyEventChanges()
 end
 
 function VehicleSort:showCenteredBlinkingWarning(text, blinkDuration)
