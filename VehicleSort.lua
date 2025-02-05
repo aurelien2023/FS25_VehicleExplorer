@@ -140,21 +140,21 @@ function VehicleSort:prerequisitesPresent(specializations)
 end
 
 function VehicleSort:loadMap(name)
-	print("--- loading VehicleSort V".. VehicleSort.Version .. " | ModName " .. VehicleSort.ModName .. " ---");
+    print("--- loading VehicleSort V".. VehicleSort.Version .. " | ModName " .. VehicleSort.ModName .. " ---");
 
-	PlayerInputComponent.registerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerActionEvents, VehicleSort.RegisterActionEvents);
-	Enterable.onRegisterActionEvents = Utils.appendedFunction(Enterable.onRegisterActionEvents, VehicleSort.RegisterActionEvents);
+    PlayerInputComponent.registerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerActionEvents, VehicleSort.RegisterActionEvents);
+    Enterable.onRegisterActionEvents = Utils.appendedFunction(Enterable.onRegisterActionEvents, VehicleSort.RegisterActionEvents);
 
-	VehicleSort:initVS();
-	VehicleSort:loadConfig();
+    VehicleSort:initVS();
+    VehicleSort:loadConfig();
 
-	-- We'd get an error when we want to access the config menu and the data is not populated yet. Same as there is some functionality in corner cases where we
-	-- already need a populated Sorted list, hence we're going to pouplate it once here
-	for i = 1, #VehicleSort.config do
-		local val = {i, VehicleSort.config[i]};
-		table.insert(VehicleSort.orderedConfig, val);
-	end
-	table.sort(VehicleSort.orderedConfig, function(a, b) return a[2][3] < b[2][3] end)
+    -- We'd get an error when we want to access the config menu and the data is not populated yet. Same as there is some functionality in corner cases where we
+    -- already need a populated Sorted list, hence we're going to pouplate it once here
+    for i = 1, #VehicleSort.config do
+        local val = {i, VehicleSort.config[i]};
+        table.insert(VehicleSort.orderedConfig, val);
+    end
+    table.sort(VehicleSort.orderedConfig, function(a, b) return a[2][3] < b[2][3] end)
 end
 
 function VehicleSort:prepareVeEx()
@@ -177,37 +177,35 @@ function VehicleSort:onLoad(savegame)
 end
 
 function VehicleSort:onPostLoad(savegame)
+    if savegame ~= nil then
+        local orderId = savegame.xmlFile:getValue(savegame.key..".vehicleSort#UserOrder")
+        if orderId ~= nil then
+            VehicleSort:dp(string.format('Loaded orderId {%d} for vehicleId {%d}', orderId, self.id), 'onPostLoad');
+        end
 
-	if savegame ~= nil then
+        if self.spec_vehicleSort ~= nil then
+            self.spec_vehicleSort.id = self.id;
+            if orderId ~= nil then
+                self.spec_vehicleSort.orderId = orderId;
+            end
+        end
 
-		local orderId = savegame.xmlFile:getValue(savegame.key..".vehicleSort#UserOrder")
-		if orderId ~= nil then
-			VehicleSort:dp(string.format('Loaded orderId {%d} for vehicleId {%d}', orderId, self.id), 'onPostLoad');
-		end
+        local isParked = Utils.getNoNil(savegame.xmlFile:getValue(savegame.key..".vehicleSort#isParked"), false)
+        if isParked then
+            VehicleSort:dp(string.format('Set isParked {%s} for orderId {%d} / vehicleId {%d}', tostring(isParked), orderId, self.id), 'onPostLoad');
+            self:setIsTabbable(false);
+        end
 
-		if self.spec_vehicleSort ~= nil then
-			self.spec_vehicleSort.id = self.id;
-			if orderId ~= nil then
-				self.spec_vehicleSort.orderId = orderId;
-			end
-		end
-
-		local isParked = Utils.getNoNil(savegame.xmlFile:getValue(savegame.key..".vehicleSort#isParked"), false)
-		if isParked then
-			VehicleSort:dp(string.format('Set isParked {%s} for orderId {%d} / vehicleId {%d}', tostring(isParked), orderId, self.id), 'onPostLoad');
-			self:setIsTabbable(false);
-		end
-
-		-- For any reason trains get handled differently, and simply ignore what we set at this stage. So lets store the status to hande it later on.
-		if self.typeName == 'locomotive' then
-			if VehicleSort.loadTrainStatus[self.id] == nil then
-				VehicleSort.loadTrainStatus[self.id] = {};
-				VehicleSort.loadTrainStatus.entries = VehicleSort.loadTrainStatus.entries + 1;
-			end
-			VehicleSort.loadTrainStatus[self.id]['isParked'] = isParked;
-			--VehicleSort:dp(string.format('Added train isParked to loadTrainStatus. orderId {%d}, id {%d}', orderId, Utils.getNoNil(self.id, 0)));
-		end
-	end
+        -- For any reason trains get handled differently, and simply ignore what we set at this stage. So lets store the status to hande it later on.
+        if self.typeName == 'locomotive' then
+            if VehicleSort.loadTrainStatus[self.id] == nil then
+                VehicleSort.loadTrainStatus[self.id] = {};
+                VehicleSort.loadTrainStatus.entries = VehicleSort.loadTrainStatus.entries + 1;
+            end
+            VehicleSort.loadTrainStatus[self.id]['isParked'] = isParked;
+            --VehicleSort:dp(string.format('Added train isParked to loadTrainStatus. orderId {%d}, id {%d}', orderId, Utils.getNoNil(self.id, 0)));
+        end
+    end
 end
 
 function VehicleSort:onDelete()
@@ -435,26 +433,26 @@ function VehicleSort:action_vsMoveCursorDownFast(actionName, keyStatus, arg3, ar
 end
 
 function VehicleSort:action_vsChangeVehicle(actionName, keyStatus, arg3, arg4, arg5)
-	VehicleSort:dp("action_vsChangeVehicle fires", "action_vsChangeVehicle");
-	if VehicleSort.showVehicles then
-		local realVeh = g_currentMission.vehicleSystem.vehicles[VehicleSort.Sorted[VehicleSort.selectedIndex]];
-		if realVeh.getIsControlled and not realVeh:getIsControlled() and realVeh:getIsEnterable() then
+    VehicleSort:dp("action_vsChangeVehicle fires", "action_vsChangeVehicle");
+    if VehicleSort.showVehicles then
+        local realVeh = g_currentMission.vehicleSystem.vehicles[VehicleSort.Sorted[VehicleSort.selectedIndex]];
+        if realVeh.getIsControlled and not realVeh:getIsControlled() and realVeh:getIsEnterable() then
 
-			VehicleSort:dp(string.format('VehicleSort.wasTeleportAction {%s}', tostring(VehicleSort.wasTeleportAction)));
+            VehicleSort:dp(string.format('VehicleSort.wasTeleportAction {%s}', tostring(VehicleSort.wasTeleportAction)));
 
-			if envTardis == nil or
-						(envTardis ~= nil and not VehicleSort.wasTeleportAction) or
-						(envTardis ~= nil and VehicleSort.wasTeleportAction and VehicleSort.config[23][2]) then
-				g_localPlayer:requestToEnterVehicle(realVeh);
-				VehicleSort:easyTab(realVeh);
-				VehicleSort.wasTeleportAction = false;
-			elseif envTardis ~= nil then
-				VehicleSort.wasTeleportAction = false;
-			end
-		end
-		-- Ajoutez cet appel pour masquer les événements du menu F1
+            if envTardis == nil or
+                        (envTardis ~= nil and not VehicleSort.wasTeleportAction) or
+                        (envTardis ~= nil and VehicleSort.wasTeleportAction and VehicleSort.config[23][2]) then
+                g_localPlayer:requestToEnterVehicle(realVeh);
+                VehicleSort:easyTab(realVeh);
+                VehicleSort.wasTeleportAction = false;
+            elseif envTardis ~= nil then
+                VehicleSort.wasTeleportAction = false;
+            end
+        end
+        -- Ajoutez cet appel pour masquer les événements du menu F1
         VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-	end
+    end
 end
 
 function VehicleSort:action_vsShowConfig(actionName, keyStatus, arg3, arg4, arg5)
