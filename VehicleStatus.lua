@@ -1,9 +1,9 @@
 -- VehicleStatus.lua for FS25
--- Author: sperrgebiet, teknogeek
+-- Author: teknogeek
 -- Please see https://github.com/teknogeek/FS25_VehicleExplorer for additional information, credits, issues and everything else
 
 VehicleStatus = {};
-VehicleStatus.debugMessages = false; -- Add this line to control debug output
+
 
 -- It's great that Giants gets rid of functions as part of an update. Now we can do things more complicated than before
 --VehicleStatus.ModName = g_currentModName
@@ -12,10 +12,9 @@ VehicleStatus.ModName = "FS25_VehicleExplorer";
 VehicleStatus.ModDirectory = g_modManager.nameToMod.FS25_VehicleExplorer.modDir
 VehicleStatus.Version = "1.0.1.0";
 
+VehicleStatus.debugMessages = false; -- Add this line to control debug output
 
 VehicleStatus.debug = fileExists(VehicleStatus.ModDirectory ..'debug');
-
-VehicleSort.enableDebugMessages = false
 
 print(string.format('VehicleStatus v%s - DebugMode %s)', VehicleStatus.Version, tostring(VehicleStatus.debug)));
 
@@ -51,13 +50,8 @@ end
 function VehicleStatus:onLoad(savegame)
 end
 
--- Modify initSpecialization to use new debug system 
 function VehicleStatus.initSpecialization()
 	local schema = Vehicle.xmlSchemaSavegame
-	
-	-- Only print debug if enabled
-	VehicleStatus:debugPrint("Adding Specialization 'vehicleStatus'", "RegisterSpecialization.lua")
-	
 	schema:setXMLSpecializationType("vehicleStatus")
 
 	schema:register(XMLValueType.BOOL, "vehicles.vehicle(?).vehicleStatus#isMotorStarted", "")
@@ -69,12 +63,10 @@ function VehicleStatus.initSpecialization()
 	--schema:setXMLSpecializationType()
 end
 
--- Update other debug prints similarly
 function VehicleStatus:onPostLoad(savegame)
 	if VehicleSort.config[14][2] and savegame ~= nil then
 		if self.spec_motorized ~= nil then
 			local motorTurnedOn = Utils.getNoNil(savegame.xmlFile:getValue(savegame.key..".vehicleStatus#isMotorStarted"), false);
-			VehicleStatus:debugPrint(string.format('motorTurnedOn: {%s} for {%s}', tostring(motorTurnedOn), self.configFileName), 'onPostLoad')
 			VehicleSort:dp(string.format('motorTurnedOn: {%s} for {%s} | savegame.key: {%s}', tostring(motorTurnedOn), self.configFileName, savegame.key .. ".vehicleStatus#isMotorStarted"), 'VehicleStatus:onPostLoad');
 			if motorTurnedOn then
 				self:startMotor();

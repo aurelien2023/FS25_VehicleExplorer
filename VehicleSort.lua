@@ -1,5 +1,5 @@
 -- VehicleSort.lua for FS25
--- Author: sperrgebiet, teknogeek
+-- Author: teknogeek
 -- Please see https://github.com/teknogeek/FS25_VehicleExplorer for additional information, credits, issues and everything else
 
 VehicleSort = {};
@@ -15,11 +15,11 @@ VehicleSort.Version = "1.0.1.0";
 
 VehicleSort.debug = fileExists(VehicleSort.ModDirectory ..'debug');
 
-VehicleSort.firstRun = true;
-
 VehicleSort.enableDebugMessages = false
 
--- print(string.format('VehicleSort v%s - DebugMode %s)', VehicleSort.Version, tostring(VehicleSort.debug)));
+VehicleSort.firstRun = true;
+
+print(string.format('VehicleSort v%s - DebugMode %s)', VehicleSort.Version, tostring(VehicleSort.debug)));
 
 VehicleSort.bgTransDef = 0.8;
 VehicleSort.txtSizeDef = 2;
@@ -104,8 +104,6 @@ VehicleSort.HiddenCount = 0;
 --VehicleSort.dirtyState = false;						-- Used to check if we have to sync the order with g_currentMission.vehicles
 VehicleSort.orderedConfig = {};							-- It's just nicer to have the config list ordered
 
-VehicleSort.enableDebugMessages = false; -- Set to true to see specialization debug messages
-
 addModEventListener(VehicleSort);
 
 function VehicleSort:dp(val, fun, msg) -- debug mode, write to log
@@ -140,21 +138,21 @@ function VehicleSort:prerequisitesPresent(specializations)
 end
 
 function VehicleSort:loadMap(name)
-    print("--- loading VehicleSort V".. VehicleSort.Version .. " | ModName " .. VehicleSort.ModName .. " ---");
+	print("--- loading VehicleSort V".. VehicleSort.Version .. " | ModName " .. VehicleSort.ModName .. " ---");
 
-    PlayerInputComponent.registerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerActionEvents, VehicleSort.RegisterActionEvents);
-    Enterable.onRegisterActionEvents = Utils.appendedFunction(Enterable.onRegisterActionEvents, VehicleSort.RegisterActionEvents);
+	PlayerInputComponent.registerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerActionEvents, VehicleSort.RegisterActionEvents);
+	Enterable.onRegisterActionEvents = Utils.appendedFunction(Enterable.onRegisterActionEvents, VehicleSort.RegisterActionEvents);
 
-    VehicleSort:initVS();
-    VehicleSort:loadConfig();
+	VehicleSort:initVS();
+	VehicleSort:loadConfig();
 
-    -- We'd get an error when we want to access the config menu and the data is not populated yet. Same as there is some functionality in corner cases where we
-    -- already need a populated Sorted list, hence we're going to pouplate it once here
-    for i = 1, #VehicleSort.config do
-        local val = {i, VehicleSort.config[i]};
-        table.insert(VehicleSort.orderedConfig, val);
-    end
-    table.sort(VehicleSort.orderedConfig, function(a, b) return a[2][3] < b[2][3] end)
+	-- We'd get an error when we want to access the config menu and the data is not populated yet. Same as there is some functionality in corner cases where we
+	-- already need a populated Sorted list, hence we're going to pouplate it once here
+	for i = 1, #VehicleSort.config do
+		local val = {i, VehicleSort.config[i]};
+		table.insert(VehicleSort.orderedConfig, val);
+	end
+	table.sort(VehicleSort.orderedConfig, function(a, b) return a[2][3] < b[2][3] end)
 end
 
 function VehicleSort:prepareVeEx()
@@ -174,56 +172,40 @@ end
 ---Called on loading
 -- @param table savegame savegame
 function VehicleSort:onLoad(savegame)
-    if not self.spec_vehicleSort then
-        return
-    end
-    
-    local spec = self.spec_vehicleSort
-    
-    -- Initialiser les tables
-    spec.texts = spec.texts or {}
-    spec.actionEvents = spec.actionEvents or {}
-    
-    -- Initialiser les textes nécessaires
-    if g_i18n then
-        for _, config in pairs(VehicleSort.config) do
-            if config[1] then
-                spec.texts[config[1]] = g_i18n:getText(config[1])
-            end
-        end
-    end
 end
 
 function VehicleSort:onPostLoad(savegame)
-    if savegame ~= nil then
-        local orderId = savegame.xmlFile:getValue(savegame.key..".vehicleSort#UserOrder")
-        if orderId ~= nil then
-            VehicleSort:dp(string.format('Loaded orderId {%d} for vehicleId {%d}', orderId, self.id), 'onPostLoad');
-        end
 
-        if self.spec_vehicleSort ~= nil then
-            self.spec_vehicleSort.id = self.id;
-            if orderId ~= nil then
-                self.spec_vehicleSort.orderId = orderId;
-            end
-        end
+	if savegame ~= nil then
 
-        local isParked = Utils.getNoNil(savegame.xmlFile:getValue(savegame.key..".vehicleSort#isParked"), false)
-        if isParked then
-            VehicleSort:dp(string.format('Set isParked {%s} for orderId {%d} / vehicleId {%d}', tostring(isParked), orderId, self.id), 'onPostLoad');
-            self:setIsTabbable(false);
-        end
+		local orderId = savegame.xmlFile:getValue(savegame.key..".vehicleSort#UserOrder")
+		if orderId ~= nil then
+			VehicleSort:dp(string.format('Loaded orderId {%d} for vehicleId {%d}', orderId, self.id), 'onPostLoad');
+		end
 
-        -- For any reason trains get handled differently, and simply ignore what we set at this stage. So lets store the status to hande it later on.
-        if self.typeName == 'locomotive' then
-            if VehicleSort.loadTrainStatus[self.id] == nil then
-                VehicleSort.loadTrainStatus[self.id] = {};
-                VehicleSort.loadTrainStatus.entries = VehicleSort.loadTrainStatus.entries + 1;
-            end
-            VehicleSort.loadTrainStatus[self.id]['isParked'] = isParked;
-            --VehicleSort:dp(string.format('Added train isParked to loadTrainStatus. orderId {%d}, id {%d}', orderId, Utils.getNoNil(self.id, 0)));
-        end
-    end
+		if self.spec_vehicleSort ~= nil then
+			self.spec_vehicleSort.id = self.id;
+			if orderId ~= nil then
+				self.spec_vehicleSort.orderId = orderId;
+			end
+		end
+
+		local isParked = Utils.getNoNil(savegame.xmlFile:getValue(savegame.key..".vehicleSort#isParked"), false)
+		if isParked then
+			VehicleSort:dp(string.format('Set isParked {%s} for orderId {%d} / vehicleId {%d}', tostring(isParked), orderId, self.id), 'onPostLoad');
+			self:setIsTabbable(false);
+		end
+
+		-- For any reason trains get handled differently, and simply ignore what we set at this stage. So lets store the status to hande it later on.
+		if self.typeName == 'locomotive' then
+			if VehicleSort.loadTrainStatus[self.id] == nil then
+				VehicleSort.loadTrainStatus[self.id] = {};
+				VehicleSort.loadTrainStatus.entries = VehicleSort.loadTrainStatus.entries + 1;
+			end
+			VehicleSort.loadTrainStatus[self.id]['isParked'] = isParked;
+			--VehicleSort:dp(string.format('Added train isParked to loadTrainStatus. orderId {%d}, id {%d}', orderId, Utils.getNoNil(self.id, 0)));
+		end
+	end
 end
 
 function VehicleSort:onDelete()
@@ -240,104 +222,36 @@ function VehicleSort:onDelete()
 end
 
 function VehicleSort:RegisterActionEvents(isSelected, isOnActiveVehicle)
-    if not self.isClient then
-        return
-    end
-    
-    -- S'assurer que la table d'événements existe
-    self.actionEvents = self.actionEvents or {}
-    
-    -- Nettoyer les événements existants
-    self:clearActionEventsTable(self.actionEvents)
+	VehicleSort:dp("Registering action events...", 'RegisterActionEvents')
 
-    -- Ne pas continuer si nous ne sommes pas dans le bon contexte
-    if not self.isActiveForInputIgnoreSelectionIgnoreAI then
-        return
-    end
+	local actions = {
+					"vsToggleList",
+					"vsLockListItem",
+					"vsMoveCursorUp",
+					"vsMoveCursorDown",
+					"vsMoveCursorUpFast",
+					"vsMoveCursorDownFast",
+					"vsChangeVehicle",
+					"vsShowConfig",
+					"vsTogglePark",
+					"vsRepair",
+					"vsTab",
+					"vsTabBack",
+					"vsEasyTab"
+				};
 
-    local actions = {
-        "vsToggleList",
-        "vsLockListItem",
-        "vsMoveCursorUp",
-        "vsMoveCursorDown",
-        "vsMoveCursorUpFast",
-        "vsMoveCursorDownFast",
-        "vsChangeVehicle",
-        "vsShowConfig",
-        "vsTogglePark",
-        "vsRepair",
-        "vsTab",
-        "vsTabBack",
-        "vsEasyTab"
-    }
-
-    -- Sauvegarder le contexte actuel
-    local oldContext = g_inputBinding.currentContextName
-    
-    -- Commencer la modification des événements
-    g_inputBinding:beginActionEventsModification(oldContext)
-    
-    for _, actionName in pairs(actions) do
-        local actionMethod = string.format("action_%s", actionName)
-        
-        -- Vérifier que la méthode existe
-        if VehicleSort[actionMethod] then
-            -- Enregistrer l'événement d'action
-            local _, eventName = InputBinding.registerActionEvent(g_inputBinding, actionName, self, 
-                VehicleSort[actionMethod], false, true, false, true)
-            
-            if eventName then
-                -- Stocker l'événement
-                table.insert(VehicleSort.eventName, eventName)
-                
-                -- Définir la visibilité en fonction de la configuration
-                local isVisible = not VehicleSort.config[13][2]
-                g_inputBinding:setActionEventTextVisibility(eventName, isVisible)
-                g_inputBinding:setActionEventTextPriority(eventName, GS_PRIO_NORMAL)
-            end
-        end
-    end
-    
-    -- Terminer la modification des événements
-    g_inputBinding:endActionEventsModification()
-    
-    -- Restaurer le contexte précédent si nécessaire
-    if oldContext ~= g_inputBinding.currentContextName then
-        g_inputBinding:beginActionEventsModification(oldContext)
-    end
-end
-
-function VehicleSort:clearActionEventsTable(actionEvents)
-    if actionEvents == nil then
-        return
-    end
-    
-    local i = 0
-    while actionEvents[i] ~= nil do
-        g_inputBinding:removeActionEvent(actionEvents, actionEvents[i].actionEventId)
-        i = i + 1
-    end
-end
-
-function VehicleSort:isActiveForInputIgnoreSelectionIgnoreAI()
-    return true
-end
-
-function VehicleSort:updateActionEvents()
-    local spec = self.spec_vehicleSort
-    if not spec or not spec.actionEvents then
-        return
-    end
-    
-    for _, event in pairs(spec.actionEvents) do
-        if event.eventId then
-            local shouldBeVisible = not VehicleSort.config[13][2]
-            if event.isVisible ~= shouldBeVisible then
-                event.isVisible = shouldBeVisible
-                g_inputBinding:setActionEventTextVisibility(event.eventId, shouldBeVisible)
-            end
-        end
-    end
+	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
+	for _, action in pairs(actions) do
+		local actionMethod = string.format("action_%s", action);
+		local result, eventName = g_inputBinding.registerActionEvent(g_inputBinding, action, self, VehicleSort[actionMethod], false, true, false, true)
+		VehicleSort:dp("Register action event result", 'RegisterActionEvents', string.format("actionMethod: {%s} | event name: {%s}", actionMethod, eventName))
+		if result then
+			table.insert(VehicleSort.eventName, eventName);
+			g_inputBinding:setActionEventTextVisibility(eventId, VehicleSort.config[13][2]);
+		end
+	end
+	g_inputBinding:endActionEventsModification()
+	g_inputBinding:beginActionEventsModification(g_inputBinding.currentContextName)
 end
 
 function VehicleSort.registerEventListeners(vehicleType)
@@ -383,8 +297,6 @@ function VehicleSort:saveToXMLFile(xmlFile, key)
 end
 
 function VehicleSort:update()
-    -- Mise à jour des événements d'action
-    self:updateActionEvents()
 	-- Don't really like to add VeEx to update as it's not really necessary, but haven't found another solution to set the train motor&parked stated after load
 	if VehicleSort.firstRun then
 		VehicleSort:prepareVeEx();
@@ -411,10 +323,6 @@ function VehicleSort:draw()
 		else
 		  VehicleSort:drawList();
 		end
-        if VehicleSort.config[13][2] then
-            -- Modification : Masquer l'attribut des touches dans le menu F1
-            VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-        end
 	end
 
 end
@@ -519,55 +427,50 @@ function VehicleSort:action_vsMoveCursorDownFast(actionName, keyStatus, arg3, ar
 end
 
 function VehicleSort:action_vsChangeVehicle(actionName, keyStatus, arg3, arg4, arg5)
-    VehicleSort:dp("action_vsChangeVehicle fires", "action_vsChangeVehicle");
-    if VehicleSort.showVehicles then
-        local realVeh = g_currentMission.vehicleSystem.vehicles[VehicleSort.Sorted[VehicleSort.selectedIndex]];
-        if realVeh.getIsControlled and not realVeh:getIsControlled() and realVeh:getIsEnterable() then
+	VehicleSort:dp("action_vsChangeVehicle fires", "action_vsChangeVehicle");
+	if VehicleSort.showVehicles then
+		local realVeh = g_currentMission.vehicleSystem.vehicles[VehicleSort.Sorted[VehicleSort.selectedIndex]];
+		if realVeh.getIsControlled and not realVeh:getIsControlled() and realVeh:getIsEnterable() then
 
-            VehicleSort:dp(string.format('VehicleSort.wasTeleportAction {%s}', tostring(VehicleSort.wasTeleportAction)));
+			VehicleSort:dp(string.format('VehicleSort.wasTeleportAction {%s}', tostring(VehicleSort.wasTeleportAction)));
 
-            if envTardis == nil or
-                        (envTardis ~= nil and not VehicleSort.wasTeleportAction) or
-                        (envTardis ~= nil and VehicleSort.wasTeleportAction and VehicleSort.config[23][2]) then
-                g_localPlayer:requestToEnterVehicle(realVeh);
-                VehicleSort:easyTab(realVeh);
-                VehicleSort.wasTeleportAction = false;
-            elseif envTardis ~= nil then
-                VehicleSort.wasTeleportAction = false;
-            end
-			if VehicleSort.config[13][2] == false then
-                VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-            end
-        end
-        -- Ajoutez cet appel pour masquer les événements du menu F1
-        -- VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-    end
+			if envTardis == nil or
+						(envTardis ~= nil and not VehicleSort.wasTeleportAction) or
+						(envTardis ~= nil and VehicleSort.wasTeleportAction and VehicleSort.config[23][2]) then
+				g_localPlayer:requestToEnterVehicle(realVeh);
+				VehicleSort:easyTab(realVeh);
+				VehicleSort.wasTeleportAction = false;
+			elseif envTardis ~= nil then
+				VehicleSort.wasTeleportAction = false;
+			end
+		end
+	end
 end
 
 function VehicleSort:action_vsShowConfig(actionName, keyStatus, arg3, arg4, arg5)
-    VehicleSort:dp("action_vsShowConfig fires", "action_vsShowConfig");
-    if VehicleSort.showVehicles and not VehicleSort.showConfig then
-        VehicleSort.showVehicles = false;
-    end
+	VehicleSort:dp("action_vsShowConfig fires", "action_vsShowConfig");
+	if VehicleSort.showVehicles and not VehicleSort.showConfig then
+      VehicleSort.showVehicles = false;
+	end
 
-    VehicleSort.showConfig = not VehicleSort.showConfig;
-    VehicleSort:saveConfig();
+	VehicleSort.showConfig = not VehicleSort.showConfig;
+	VehicleSort:saveConfig();
 
-    -- Directly set the displayIsVisible for the F1 help menu
-    if VehicleSort.config[13][2] then
-        VehicleSort:setHelpVisibility(VehicleSort.eventName, true)
-        -- If Tardis integration is available we'll also do the same for it
-        if envTardis ~= nil and #Tardis.eventName > 0 then
-            VehicleSort:setHelpVisibility(Tardis.eventName, true)
-        end
-    else
-        VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-        if envTardis ~= nil and #Tardis.eventName > 0 then
-            VehicleSort:setHelpVisibility(Tardis.eventName, false)
-        end
-    end
+	--Directly set the displayIsVisible for the F1 help menu
+	if VehicleSort.config[13][2] then
+		VehicleSort:setHelpVisibility(VehicleSort.eventName, true)
+		--If Tardis integration is available we'll also do the same for it
+		if envTardis ~= nil and #Tardis.eventName > 0 then
+			VehicleSort:setHelpVisibility(Tardis.eventName, true)
+		end
+	else
+		VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
+		if envTardis ~= nil and #Tardis.eventName > 0 then
+			VehicleSort:setHelpVisibility(Tardis.eventName, false)
+		end
+	end
 
-    InputBinding:notifyEventChanges();
+	InputBinding:notifyEventChanges();
 end
 
 function VehicleSort:action_vsTogglePark(actionName, keyStatus, arg3, arg4, arg5)
@@ -1309,9 +1212,6 @@ function VehicleSort:getControllerName(realId)
 end
 
 function VehicleSort.initSpecialization()
-    if VehicleSort.enableDebugMessages then
-        print("::DEBUG:: from the RegisterSpecialization.lua: " .. message)
-    end
     local schema = Vehicle.xmlSchemaSavegame
     schema:setXMLSpecializationType("vehicleSort")
 
@@ -1360,7 +1260,7 @@ function VehicleSort:initVS()
 	VehicleSort.xmlFilename = VehicleSort.savePath .. 'VeExConfig.xml';
 	VehicleSort.bg = createImageOverlay('dataS/menu/black.png'); --credit: Decker_MMIV, VehicleGroupsSwitcher mod
 	VehicleSort.bgX = 0.5;
-    VehicleSort.eventName = VehicleSort.eventName or {}
+
 	VehicleSort:dp(string.format('Initialized userPath [%s] saveBasePath [%s] savePath [%s]',
 	tostring(VehicleSort.userPath),
 	tostring(VehicleSort.saveBasePath),
@@ -1464,17 +1364,6 @@ function VehicleSort:loadConfig()
 						VehicleSort.config[i][2] = b;
 					end
 				end
-                if i == 13 then  -- Index correspondant à la configuration d'aide
-
-                    local helpVisibility = getXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.helpVisibility')
-
-                    if helpVisibility ~= nil then
-
-                        VehicleSort.config[i][2] = helpVisibility
-
-                    end
-
-                end
 			end
 			print("VeExConfig loaded");
 		end
@@ -1624,10 +1513,8 @@ function VehicleSort:saveConfig()
 			setXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. tostring(VehicleSort.config[i][1]), VehicleSort.config[i][2]);
 		end
 	end
-    -- Ajouter une sauvegarde explicite de la configuration des touches
-    setXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.helpVisibility', VehicleSort.config[13][2])
-    
-    saveXMLFile(VehicleSort.saveFile);
+	saveXMLFile(VehicleSort.saveFile);
+
   print("VehicleSort config saved");
 end
 
@@ -2098,8 +1985,7 @@ function VehicleSort:tabVehicle(backwards)
 	end
 	realVeh = g_currentMission.vehicleSystem.vehicles[VehicleSort.Sorted[nextId]];
 	g_localPlayer:requestToEnterVehicle(realVeh);
-    -- Ajoutez cet appel pour masquer les événements du menu F1
-    VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
+
 end
 
 function VehicleSort:getNextInTabList(orderId, backwards)
@@ -2244,21 +2130,14 @@ function VehicleSort:overwriteDefaultTabBinding()
 	end
 end
 
-function VehicleSort:setHelpVisibility(state)
-    local spec = self.spec_vehicleSort
-    if not spec or not spec.actionEvents then
-        return
-    end
-    
-    for _, event in pairs(spec.actionEvents) do
-        if event.eventId then
-            event.isVisible = state
-            g_inputBinding:setActionEventTextVisibility(event.eventId, state)
-        end
-    end
-    
-    -- Forcer le rafraîchissement des entrées
-    InputBinding:notifyEventChanges()
+function VehicleSort:setHelpVisibility(eventTable, state)
+	if #eventTable > 0 then
+		for _, eventName in pairs(eventTable) do
+			if g_inputBinding.events[eventName] ~= nil and g_inputBinding.events[eventName].id ~= nil then
+				g_inputBinding:setActionEventTextVisibility(g_inputBinding.events[eventName].id, state)
+			end
+		end
+	end
 end
 
 function VehicleSort:showCenteredBlinkingWarning(text, blinkDuration)
