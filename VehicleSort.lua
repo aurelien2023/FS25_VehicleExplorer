@@ -106,31 +106,60 @@ VehicleSort.orderedConfig = {};							-- It's just nicer to have the config list
 
 addModEventListener(VehicleSort);
 
-function VehicleSort:dp(val, fun, msg) -- debug mode, write to log
-	if not VehicleSort.debug then
-		return;
-	end
 
-	if msg == nil then
-		msg = ' ';
-	else
-		msg = string.format(' msg = [%s] ', tostring(msg));
-	end
 
-	local pre = 'VehicleSort DEBUG:';
+-- Ajout de constantes
+local CONFIG_TYPES = {
+    INT = 1,
+    FLOAT = 2,
+    BOOL = 3
+}
 
-	if type(val) == 'table' then
-		--if #val > 0 then
-			print(string.format('%s BEGIN Printing table data: (%s)%s(function = [%s()])', pre, tostring(val), msg, tostring(fun)));
-			DebugUtil.printTableRecursively(val, '.', 0, 3);
-			print(string.format('%s END Printing table data: (%s)%s(function = [%s()])', pre, tostring(val), msg, tostring(fun)));
-		--else
-		--	print(string.format('%s Table is empty: (%s)%s(function = [%s()])', pre, tostring(val), msg, tostring(fun)));
-		--end
-	else
-		print(string.format('%s [%s]%s(function = [%s()])', pre, tostring(val), msg, tostring(fun)));
-	end
+local CONFIG_KEYS = {
+    TEXT_SIZE = 9,
+    LIST_ALIGNMENT = 20,
+    MAX_IMPLEMENTS_IMG = 24,
+    MAX_IMPLEMENTS_INFO = 25,
+    SHOW_IMPLEMENTS = 26,
+    BG_TRANSPARENCY = 10,
+    INFO_Y_START = 17
+}
+
+-- Amélioration de la méthode de débogage avec des vérifications de type
+function VehicleSort:dp(val, fun, msg)
+    if not VehicleSort.debug then return end
+
+    local function safeToString(value)
+        local valueType = type(value)
+        if valueType == "table" then
+            return "table"
+        elseif valueType == "function" then
+            return "function"
+        else
+            return tostring(value)
+        end
+    end
+
+    msg = msg and string.format(' msg = [%s] ', safeToString(msg)) or ' '
+    local pre = 'VehicleSort DEBUG:'
+
+    if type(val) == 'table' then
+        print(string.format('%s BEGIN Printing table data: (%s)%s(function = [%s()])', 
+            pre, safeToString(val), msg, safeToString(fun)))
+        
+        -- Sécurisation de l'appel de printTableRecursively
+        pcall(function() 
+            DebugUtil.printTableRecursively(val, '.', 0, 3) 
+        end)
+        
+        print(string.format('%s END Printing table data: (%s)%s(function = [%s()])', 
+            pre, safeToString(val), msg, safeToString(fun)))
+    else
+        print(string.format('%s [%s]%s(function = [%s()])', 
+            pre, safeToString(val), msg, safeToString(fun)))
+    end
 end
+
 
 
 function VehicleSort:prerequisitesPresent(specializations)
@@ -153,6 +182,13 @@ function VehicleSort:loadMap(name)
 		table.insert(VehicleSort.orderedConfig, val);
 	end
 	table.sort(VehicleSort.orderedConfig, function(a, b) return a[2][3] < b[2][3] end)
+
+    -- Enregistrement des événements d'aide
+    for _, action in ipairs(self.actionList) do
+        local _, eventId = g_inputBinding:registerActionEvent(action.name, self, 
+            self[action.name], false, true, false, true)
+        self.actionEvents[action.name] = eventId
+    end
 end
 
 function VehicleSort:prepareVeEx()
@@ -448,29 +484,19 @@ function VehicleSort:action_vsChangeVehicle(actionName, keyStatus, arg3, arg4, a
 end
 
 function VehicleSort:action_vsShowConfig(actionName, keyStatus, arg3, arg4, arg5)
-	VehicleSort:dp("action_vsShowConfig fires", "action_vsShowConfig");
-	if VehicleSort.showVehicles and not VehicleSort.showConfig then
-      VehicleSort.showVehicles = false;
-	end
+    VehicleSort:dp("action_vsShowConfig fires", "action_vsShowConfig")
+    
+    if VehicleSort.showVehicles and not VehicleSort.showConfig then
+        VehicleSort.showVehicles = false
+    end
 
-	VehicleSort.showConfig = not VehicleSort.showConfig;
-	VehicleSort:saveConfig();
+    VehicleSort.showConfig = not VehicleSort.showConfig
+    VehicleSort:saveConfig()
 
-	--Directly set the displayIsVisible for the F1 help menu
-	if VehicleSort.config[13][2] then
-		VehicleSort:setHelpVisibility(VehicleSort.eventName, true)
-		--If Tardis integration is available we'll also do the same for it
-		if envTardis ~= nil and #Tardis.eventName > 0 then
-			VehicleSort:setHelpVisibility(Tardis.eventName, true)
-		end
-	else
-		VehicleSort:setHelpVisibility(VehicleSort.eventName, false)
-		if envTardis ~= nil and #Tardis.eventName > 0 then
-			VehicleSort:setHelpVisibility(Tardis.eventName, false)
-		end
-	end
+    -- Mise à jour de la visibilité du menu d'aide F1
+    VehicleSort:setHelpVisibility()
 
-	InputBinding:notifyEventChanges();
+    InputBinding:notifyEventChanges()
 end
 
 function VehicleSort:action_vsTogglePark(actionName, keyStatus, arg3, arg4, arg5)
@@ -1310,64 +1336,55 @@ function VehicleSort:isHired(realId)
 	end
 end
 
+-- Amélioration de loadConfig avec validation renforcée
 function VehicleSort:loadConfig()
-	if fileExists(VehicleSort.xmlFilename) then
-		VehicleSort.saveFile = loadXMLFile('VehicleSort.loadFile', VehicleSort.xmlFilename);
-
-		if hasXMLProperty(VehicleSort.saveFile, VehicleSort.keyCon) then
-
-			VehicleSort:dp('Config file found.', 'VehicleSort:loadConfig');
-			for i = 1, #VehicleSort.config do
-				if VehicleSort:contains({9},i) then				--txtsize as int with max value 3
-					local int = getXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. VehicleSort.config[i][1]);
-					if tonumber(int) == nil or tonumber(int) <= 0 or tonumber(int) > 3 then
-						int = VehicleSort.txtSizeDef;
-						print("VeEx Config: Invalid saved value for txtSizeDef. Set default value: " .. VehicleSort.txtSizeDef);
-					else
-						int = math.floor(tonumber(int));
-					end
-					VehicleSort.config[i][2] = int;
-					VehicleSort:dp(string.format('txtSize value set to [%d]', int), 'VehicleSort:loadConfig');
-				elseif VehicleSort:contains({24, 25, 26}, i) then	--max implements info & image, showImplementsMax as int with max value 9
-					local int = getXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. VehicleSort.config[i][1]);
-					if tonumber(int) == nil or tonumber(int) <= 0 or tonumber(int) > 9 then
-						int = VehicleSort.config[i][2];
-						print("VeEx Config: Invalid saved value for " .. VehicleSort.config[i][1] .. ". Set default value: " .. tostring(VehicleSort.config[i][2]));
-					else
-						int = math.floor(tonumber(int));
-					end
-					VehicleSort.config[i][2] = int;
-					VehicleSort:dp(string.format('txtSize value set to [%d]', int), 'VehicleSort:loadConfig');
-				elseif VehicleSort:contains({10, 17},i) then
-					local flt = getXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. VehicleSort.config[i][1]);
-					if tonumber(flt) == nil or tonumber(flt) <= 0 or tonumber(flt) > 1 then
-						flt = VehicleSort.config[i][2];
-						print("VeEx Config: Invalid saved value for " .. VehicleSort.config[i][1] .. ". Set default value: " .. tostring(VehicleSort.config[i][2]));
-					else
-						flt = tonumber(string.format('%.1f', tonumber(flt)));
-					end
-					VehicleSort.config[i][2] = flt;
-					VehicleSort:dp(string.format('%s value set to [%f]',tostring(VehicleSort.config[i][1]), flt), 'VehicleSort:loadConfig');
-				elseif i == 20 then
-					local int = getXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. VehicleSort.config[i][1]);
-					if tonumber(int) == nil or tonumber(int) <= 0 or tonumber(int) > 3 then
-						int = VehicleSort.listAlignment;
-						print("VeEx Config: Invalid saved value for " .. VehicleSort.config[i][1] .. ". Set default value: " .. tostring(VehicleSort.config[i][2]));
-					else
-						int = math.floor(tonumber(int));
-					end
-					VehicleSort.config[i][2] = int;
-					VehicleSort:dp(string.format('listAlignment value set to [%d]', int), 'VehicleSort:loadConfig');
-				else
-					local b = getXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. VehicleSort.config[i][1]);
-					if b ~= nil then
-						VehicleSort.config[i][2] = b;
-					end
-				end
-			end
-			print("VeExConfig loaded");
-		end
-	end
+    if not fileExists(VehicleSort.xmlFilename) then return end
+    
+    local success, errorMsg = pcall(function()
+        VehicleSort.saveFile = loadXMLFile('VehicleSort.loadFile', VehicleSort.xmlFilename)
+        
+        if not hasXMLProperty(VehicleSort.saveFile, VehicleSort.keyCon) then return end
+        
+        for i = 1, #VehicleSort.config do
+            local configKey = VehicleSort.config[i][1]
+            local defaultValue = VehicleSort.config[i][2]
+            
+            local loadMethod = {
+                [CONFIG_TYPES.INT] = function(val) 
+                    local num = tonumber(val)
+                    return (num and num > 0 and num <= 9) and math.floor(num) or defaultValue 
+                end,
+                [CONFIG_TYPES.FLOAT] = function(val) 
+                    local num = tonumber(val)
+                    return (num and num >= 0 and num <= 1) and tonumber(string.format('%.1f', num)) or defaultValue 
+                end,
+                [CONFIG_TYPES.BOOL] = function(val) 
+                    return val ~= nil and not not val or defaultValue 
+                end
+            }
+            
+            -- Détermination dynamique du type de chargement
+            local loadType = CONFIG_TYPES.BOOL
+            if VehicleSort:contains({CONFIG_KEYS.TEXT_SIZE, CONFIG_KEYS.LIST_ALIGNMENT, 
+                CONFIG_KEYS.MAX_IMPLEMENTS_IMG, CONFIG_KEYS.MAX_IMPLEMENTS_INFO, 
+                CONFIG_KEYS.SHOW_IMPLEMENTS}, i) then
+                loadType = CONFIG_TYPES.INT
+            elseif VehicleSort:contains({CONFIG_KEYS.BG_TRANSPARENCY, CONFIG_KEYS.INFO_Y_START}, i) then
+                loadType = CONFIG_TYPES.FLOAT
+            end
+            
+            local loadedValue = getXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. configKey)
+            if loadedValue ~= nil then
+                VehicleSort.config[i][2] = loadMethod[loadType](loadedValue)
+            end
+        end
+        
+        print("VehicleSort config loaded successfully")
+    end)
+    
+    if not success then
+        print("Error loading VehicleSort config: " .. tostring(errorMsg))
+    end
 end
 
 function VehicleSort:moveDown(moveSpeed)
@@ -1502,20 +1519,49 @@ function VehicleSort:toggleParkState(selectedIndex)
 	VehicleSort:dp(string.format('realId {%d} - parked {%s}', realId, tostring(parked)), 'VehicleSort:toggleParkState');
 end
 
+-- Amélioration de saveConfig avec gestion des erreurs
 function VehicleSort:saveConfig()
-	VehicleSort.saveFile = createXMLFile('VehicleSort.saveFile', VehicleSort.xmlFilename, VehicleSort.keyCon);
-	for i = 1, #VehicleSort.config do
-		if VehicleSort:contains({9, 20, 24, 25, 26}, i) then		-- int values
-			setXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. tostring(VehicleSort.config[i][1]), tostring(VehicleSort.config[i][2]));
-		elseif VehicleSort:contains({10, 17}, i) then				-- floats
-			setXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. tostring(VehicleSort.config[i][1]), string.format('%.1f', VehicleSort.config[i][2]));
-		else
-			setXMLBool(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. tostring(VehicleSort.config[i][1]), VehicleSort.config[i][2]);
-		end
-	end
-	saveXMLFile(VehicleSort.saveFile);
-
-  print("VehicleSort config saved");
+    local success, errorMsg = pcall(function()
+        VehicleSort.saveFile = createXMLFile('VehicleSort.saveFile', VehicleSort.xmlFilename, VehicleSort.keyCon)
+        
+        for i = 1, #VehicleSort.config do
+            local configValue = VehicleSort.config[i][2]
+            local configKey = VehicleSort.config[i][1]
+            
+            local saveMethod = {
+                [CONFIG_TYPES.INT] = function(val) 
+                    return tostring(math.floor(tonumber(val) or 0)) 
+                end,
+                [CONFIG_TYPES.FLOAT] = function(val) 
+                    return string.format('%.1f', tonumber(val) or 0) 
+                end,
+                [CONFIG_TYPES.BOOL] = function(val) 
+                    return tostring(not not val) 
+                end
+            }
+            
+            -- Détermination dynamique du type de sauvegarde
+            local saveType = CONFIG_TYPES.BOOL
+            if VehicleSort:contains({CONFIG_KEYS.TEXT_SIZE, CONFIG_KEYS.LIST_ALIGNMENT, 
+                CONFIG_KEYS.MAX_IMPLEMENTS_IMG, CONFIG_KEYS.MAX_IMPLEMENTS_INFO, 
+                CONFIG_KEYS.SHOW_IMPLEMENTS}, i) then
+                saveType = CONFIG_TYPES.INT
+            elseif VehicleSort:contains({CONFIG_KEYS.BG_TRANSPARENCY, CONFIG_KEYS.INFO_Y_START}, i) then
+                saveType = CONFIG_TYPES.FLOAT
+            end
+            
+            setXMLString(VehicleSort.saveFile, 
+                VehicleSort.keyCon .. '.' .. tostring(configKey), 
+                saveMethod[saveType](configValue))
+        end
+        
+        saveXMLFile(VehicleSort.saveFile)
+        print("VehicleSort config saved successfully")
+    end)
+    
+    if not success then
+        print("Error saving VehicleSort config: " .. tostring(errorMsg))
+    end
 end
 
 function VehicleSort:drawStoreImage(realId)
@@ -2130,14 +2176,31 @@ function VehicleSort:overwriteDefaultTabBinding()
 	end
 end
 
-function VehicleSort:setHelpVisibility(eventTable, state)
-	if #eventTable > 0 then
-		for _, eventName in pairs(eventTable) do
-			if g_inputBinding.events[eventName] ~= nil and g_inputBinding.events[eventName].id ~= nil then
-				g_inputBinding:setActionEventTextVisibility(g_inputBinding.events[eventName].id, state)
-			end
-		end
-	end
+function VehicleSort:setHelpVisibility()
+    local showHelp = VehicleSort.config[13][2]
+    
+    -- Mise à jour des événements d'aide VehicleSort avec le nouveau système FS25
+    if VehicleSort.eventName then
+        for _, action in pairs(g_inputBinding:getEvents()) do
+            if action.eventName == VehicleSort.eventName then
+                g_inputBinding:setActionEventVisibility(action.eventId, showHelp)
+            end
+        end
+    end
+    
+    -- Intégration Tardis si disponible
+    if envTardis and Tardis.eventName and #Tardis.eventName > 0 then
+        for _, action in pairs(g_inputBinding:getEvents()) do
+            if action.eventName == Tardis.eventName then
+                g_inputBinding:setActionEventVisibility(action.eventId, showHelp)
+            end
+        end
+    end
+
+    -- Mise à jour de l'interface d'aide FS25
+    if g_currentMission and g_currentMission.helpSystem then
+        g_currentMission.helpSystem:setShowHelpMenu(showHelp)
+    end
 end
 
 function VehicleSort:showCenteredBlinkingWarning(text, blinkDuration)
