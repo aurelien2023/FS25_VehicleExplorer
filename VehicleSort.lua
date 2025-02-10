@@ -232,21 +232,28 @@ end
 
 -- Ajout de la fonction loadSharedI3DFileFinished ici
 function VehicleSort:loadSharedI3DFileFinished(i3dNode, failedReason, args)
-    if i3dNode == 0 or args == nil then
-        print("Warning: Invalid i3dNode or args in loadSharedI3DFileFinished")
+    -- Vérification plus robuste des arguments
+    if i3dNode == 0 then
+        print("Warning: Invalid i3dNode in loadSharedI3DFileFinished")
         return
     end
     
-    if type(args) ~= "table" then
-        print("Warning: args must be a table in loadSharedI3DFileFinished")
+    -- S'assurer que args est une table valide
+    if type(args) ~= "table" or not next(args) then
         return
     end
     
-    -- Traitement des arguments valides
-    for _, v in ipairs(args) do
-        if v.node and v.parent then
-            link(v.parent, v.node)
+    -- Ajouter une protection supplémentaire pour la boucle
+    local success, error = pcall(function()
+        for _, v in ipairs(args) do
+            if v and type(v) == "table" and v.node and v.parent then
+                link(v.parent, v.node)
+            end
         end
+    end)
+    
+    if not success then
+        print("Warning: Error in loadSharedI3DFileFinished: " .. tostring(error))
     end
 end
 
@@ -304,7 +311,7 @@ end
 
 -- Configuration des événements d'action
 function VehicleSort:RegisterActionEvents(isSelected, isOnActiveVehicle)
-    if self.actionEvents == nil then
+    if not self.actionEvents then
         self.actionEvents = {}
     end
 
@@ -1243,36 +1250,28 @@ function VehicleSort:getTextSize()
   end
 end
 
+-- Mise à jour des IDs des moteurs pour FS25
 function VehicleSort:getHorsePower(realId)
-	if g_currentMission.vehicleSystem.vehicles[realId] ~= nil then
-		if VehicleSort:isTrain(realId) then
-			--VehicleSort:debugPrint(string.format('isTrain -> realId {%s}', tostring(realId)), 'getHorsePower');
-			return VehicleSort:getHorsePowerFromStore(realId)
-		else
-			local veh = g_currentMission.vehicleSystem.vehicles[realId]
-			if veh.spec_motorized ~= nil then
-				local maxMotorTorque = veh.spec_motorized.motor.peakMotorTorque
-				local maxRpm = veh.spec_motorized.motor.maxRpm
-				if maxRpm == 2200 then
-					return math.ceil(maxMotorTorque / 0.0044)
-				else
-					--Maybe I'm just too stupid. But somehow I don't get the results with the more complex formula I want. Hence getting max power from store
-					--HP = (torqueScale * torquecurvevalue * Pi * RPM / 30) * 1.35962161
-					-- motor.lastMotorRpm
-					--local torqueCurveVal = veh.spec_motorized.motor.torqueCurve.keyframes[6][1]
-					--local torqueCurveRPM = veh.spec_motorized.motor.torqueCurve.keyframes[6]['time']
-					--local hp = (maxMotorTorque * torqueCurveVal * math.pi * torqueCurveRPM / 30) * 1.35962161
-					--VehicleSort:debugPrint(string.format('maxRPM ~= 2200. HP for {%s} is: {%s}', veh.configFileName, hp))
-					--VehicleSort:debugPrint(string.format('torqueCurveVal {%s}, torqueCurveRPM {%s}, maxMotorTorque {%s}', tostring(torqueCurveVal), tostring(torqueCurveRPM), tostring(maxMotorTorque))
-					--return math.ceil(hp);
-					local powerFromStore = VehicleSort:getHorsePowerFromStore(realId)
-					if powerFromStore ~= nil then
-						return math.ceil(powerFromStore)
-					end
-				end
-			end
-		end
-	end
+    if g_currentMission.vehicleSystem.vehicles[realId] ~= nil then
+        if VehicleSort:isTrain(realId) then
+            return VehicleSort:getHorsePowerFromStore(realId)
+        else
+            local veh = g_currentMission.vehicleSystem.vehicles[realId]
+            if veh.spec_motorized ~= nil then
+                -- Mise à jour des calculs pour FS25
+                local maxMotorTorque = veh.spec_motorized.motor.peakMotorTorque
+                local maxRpm = veh.spec_motorized.motor.maxRpm
+                if maxRpm == 2200 then
+                    return math.ceil(maxMotorTorque / 0.0044) 
+                else
+                    local powerFromStore = VehicleSort:getHorsePowerFromStore(realId)
+                    if powerFromStore ~= nil then
+                        return math.ceil(powerFromStore)
+                    end
+                end
+            end
+        end
+    end
 end
 
 function VehicleSort:getHorsePowerFromStore(realId)
