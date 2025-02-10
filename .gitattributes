@@ -5,3 +5,4 @@ debug/ export-ignore
 screenshots/ export-ignore
 *.ps1 export-ignore
 *.md export-ignore
+.gitattributes export-ignore
