@@ -261,50 +261,39 @@ end
 
 -- Ajout de la fonction loadSharedI3DFileFinished ici
 function VehicleSort:loadSharedI3DFileFinished(i3dNode, failedReason, args)
-    -- Vérification plus robuste des arguments
-    if not i3dNode or i3dNode == 0 then
-        self:debugPrint("Warning: Invalid i3dNode in loadSharedI3DFileFinished", "ERROR")
-        return
-    end
+    -- Protection contre les arguments nil
+    if not args then return end
+    if not i3dNode then return end
     
-    -- Protection contre args nil ou non valide
-    if not args then
-        self:debugPrint("Warning: args is nil in loadSharedI3DFileFinished", "ERROR")
-        return
-    end
+    -- Vérifie si args est une table
+    if type(args) ~= "table" then return end
+    
+    -- Vérifie si node existe dans args
+    if not args.node then return end
 
-    -- Vérification du type de args
-    if type(args) ~= "table" then
-        self:debugPrint("Warning: args must be a table in loadSharedI3DFileFinished", "ERROR")
-        return
-    end
-
-    -- S'assurer que vehicleTypes existe
+    -- Vérifie que self.vehicleTypes existe
     if not self.vehicleTypes then
-        self:debugPrint("Warning: vehicleTypes is nil", "ERROR")
-        return
+        self.vehicleTypes = {}
     end
 
-    -- Traitement sécurisé
     local success, error = pcall(function()
         if args.saveId then
-            for _, vehicleType in pairs(self.vehicleTypes) do
+            -- Utilisation de pairs au lieu de ipairs pour plus de sécurité
+            for _, vehicleType in pairs(self.vehicleTypes) do 
                 if vehicleType and vehicleType.saveId == args.saveId then
                     vehicleType.sharedI3DNode = i3dNode
                     if vehicleType.i3dFilename then
                         delete(vehicleType.i3dFilename)
                         vehicleType.i3dFilename = nil
                     end
-                    break
+                    return
                 end
             end
-        else
-            self:debugPrint("Warning: args.saveId is missing", "ERROR")
         end
     end)
 
     if not success then
-        self:debugPrint("Error in loadSharedI3DFileFinished: " .. tostring(error), "ERROR")
+        print("Error in loadSharedI3DFileFinished: " .. tostring(error))
     end
 end
 
