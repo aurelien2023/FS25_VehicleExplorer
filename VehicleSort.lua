@@ -5,6 +5,22 @@
 VehicleSort = {};
 VehicleSort.eventName = {};
 
+-- Ajout des constantes globales en début de fichier
+local VEHICLE_SORT = {
+    DEFAULT_VALUES = {
+        BG_TRANS = 0.8,
+        TEXT_SIZE = 2,
+        INFO_Y_START = 0.8,
+        LIST_ALIGNMENT = 2,
+        MAX_IMPLEMENTS = 9
+    },
+    ERROR_MESSAGES = {
+        INVALID_VEHICLE = "Invalid vehicle reference",
+        INIT_FAILED = "Failed to initialize VehicleSort",
+        CONFIG_ERROR = "Error loading configuration"
+    }
+}
+
 -- Amélioration 1: Fonction de débogage améliorée 
 function VehicleSort:debugPrint(message, source)
     if not self.debug then return end
@@ -185,7 +201,20 @@ function VehicleSort:debugPrint(val, fun, msg)
     end
 end
 
-
+-- Amélioration de l'initialisation
+function VehicleSort.new()
+    local self = setmetatable({}, VehicleSort)
+    
+    -- Initialisation sécurisée des tables importantes
+    self.vehicleTypes = {}
+    self.Sorted = {}
+    self.actionEvents = {}
+    self.loadTrainStatus = {entries = 0}
+    self.easyTabTable = {}
+    self.orderedConfig = {}
+    
+    return self
+end
 
 function VehicleSort:prerequisitesPresent(specializations)
 	return true;
@@ -233,27 +262,49 @@ end
 -- Ajout de la fonction loadSharedI3DFileFinished ici
 function VehicleSort:loadSharedI3DFileFinished(i3dNode, failedReason, args)
     -- Vérification plus robuste des arguments
-    if i3dNode == 0 then
-        print("Warning: Invalid i3dNode in loadSharedI3DFileFinished")
+    if not i3dNode or i3dNode == 0 then
+        self:debugPrint("Warning: Invalid i3dNode in loadSharedI3DFileFinished", "ERROR")
         return
     end
     
-    -- S'assurer que args est une table valide
-    if type(args) ~= "table" or not next(args) then
+    -- Protection contre args nil ou non valide
+    if not args then
+        self:debugPrint("Warning: args is nil in loadSharedI3DFileFinished", "ERROR")
         return
     end
-    
-    -- Ajouter une protection supplémentaire pour la boucle
+
+    -- Vérification du type de args
+    if type(args) ~= "table" then
+        self:debugPrint("Warning: args must be a table in loadSharedI3DFileFinished", "ERROR")
+        return
+    end
+
+    -- S'assurer que vehicleTypes existe
+    if not self.vehicleTypes then
+        self:debugPrint("Warning: vehicleTypes is nil", "ERROR")
+        return
+    end
+
+    -- Traitement sécurisé
     local success, error = pcall(function()
-        for _, v in ipairs(args) do
-            if v and type(v) == "table" and v.node and v.parent then
-                link(v.parent, v.node)
+        if args.saveId then
+            for _, vehicleType in pairs(self.vehicleTypes) do
+                if vehicleType and vehicleType.saveId == args.saveId then
+                    vehicleType.sharedI3DNode = i3dNode
+                    if vehicleType.i3dFilename then
+                        delete(vehicleType.i3dFilename)
+                        vehicleType.i3dFilename = nil
+                    end
+                    break
+                end
             end
+        else
+            self:debugPrint("Warning: args.saveId is missing", "ERROR")
         end
     end)
-    
+
     if not success then
-        print("Warning: Error in loadSharedI3DFileFinished: " .. tostring(error))
+        self:debugPrint("Error in loadSharedI3DFileFinished: " .. tostring(error), "ERROR")
     end
 end
 
