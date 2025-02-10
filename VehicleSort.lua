@@ -230,6 +230,26 @@ function VehicleSort:onPreLoad(savegame)
 	VehicleSort.initSpecialization()
 end
 
+-- Ajout de la fonction loadSharedI3DFileFinished ici
+function VehicleSort:loadSharedI3DFileFinished(i3dNode, failedReason, args)
+    if i3dNode == 0 or args == nil then
+        print("Warning: Invalid i3dNode or args in loadSharedI3DFileFinished")
+        return
+    end
+    
+    if type(args) ~= "table" then
+        print("Warning: args must be a table in loadSharedI3DFileFinished")
+        return
+    end
+    
+    -- Traitement des arguments valides
+    for _, v in ipairs(args) do
+        if v.node and v.parent then
+            link(v.parent, v.node)
+        end
+    end
+end
+
 ---Called on loading
 -- @param table savegame savegame
 function VehicleSort:onLoad(savegame)
@@ -1397,20 +1417,31 @@ function VehicleSort:loadConfig()
             
             -- Définition des limites par type
             local minValue, maxValue = 0, 1
-            if CONFIG_TYPES.INT then
-                maxValue = 9
-            elseif CONFIG_TYPES.FLOAT then 
-                maxValue = 1.0
+            
+            -- Déterminer le type et les limites
+            local configType = CONFIG_TYPES.BOOL
+            if type(defaultValue) == "number" then
+                if math.floor(defaultValue) == defaultValue then
+                    configType = CONFIG_TYPES.INT
+                    maxValue = 9
+                else
+                    configType = CONFIG_TYPES.FLOAT
+                    maxValue = 1.0
+                end
             end
 
             local loadedValue = getXMLString(VehicleSort.saveFile, VehicleSort.keyCon .. '.' .. configKey)
             if loadedValue ~= nil then
-                -- Validation des valeurs
-                if not loadedValue or tonumber(loadedValue) < minValue or tonumber(loadedValue) > maxValue then
-                    loadedValue = defaultValue
+                loadedValue = tonumber(loadedValue) or defaultValue
+                
+                -- Validation et application des limites
+                if configType ~= CONFIG_TYPES.BOOL then
+                    loadedValue = math.max(minValue, math.min(maxValue, loadedValue))
+                else
+                    loadedValue = loadedValue == 1 or loadedValue == "true"
                 end
                 
-                -- Reste du code de chargement...
+                VehicleSort.config[i][2] = loadedValue
             end
         end
     end)
@@ -2340,3 +2371,5 @@ end
 -- additional load is finished
 --VehiclePlaceable.saveToXMLFile = Utils.appendedFunction(VehiclePlaceable.saveToXMLFile, VehicleSort.placeableSaveToXMLFile);
 --VehiclePlaceable.loadFromXMLFile = Utils.overwrittenFunction(VehiclePlaceable.loadFromXMLFile, VehicleSort.placeableLoadFromXMLFile);
+
+
