@@ -2183,7 +2183,7 @@ function VehicleSort:placeableLoadFromXMLFile(superFunc, xmlFile, key, resetVehi
 				self.vehicle.spec_vehicleSort.id = self.id;
 				if orderId ~= nil then
 					self.vehicle.spec_vehicleSort.orderId = orderId;
-				end.
+				end
 			end
 
 			local isParked = Utils.getNoNil(getXMLBool(xmlFile, key.."#isParked"), false);
