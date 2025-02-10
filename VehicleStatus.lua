@@ -4,7 +4,6 @@
 
 VehicleStatus = {};
 
-
 -- It's great that Giants gets rid of functions as part of an update. Now we can do things more complicated than before
 --VehicleStatus.ModName = g_currentModName
 --VehicleStatus.ModDirectory = g_currentModDirectory
@@ -12,18 +11,11 @@ VehicleStatus.ModName = "FS25_VehicleExplorer";
 VehicleStatus.ModDirectory = g_modManager.nameToMod.FS25_VehicleExplorer.modDir
 VehicleStatus.Version = "1.0.1.0";
 
-VehicleStatus.debugMessages = false; -- Add this line to control debug output
 
 VehicleStatus.debug = fileExists(VehicleStatus.ModDirectory ..'debug');
+VehicleStatus.debugMessages = false; -- Add this line to control debug output
 
 print(string.format('VehicleStatus v%s - DebugMode %s)', VehicleStatus.Version, tostring(VehicleStatus.debug)));
-
--- Add debug print function
-function VehicleStatus:debugPrint(message, source)
-    if self.debugMessages then
-        print(string.format("::DEBUG:: %s: %s", source or "VehicleStatus", message))
-    end
-end
 
 function VehicleStatus.prerequisitesPresent(specializations)
 	return true;
